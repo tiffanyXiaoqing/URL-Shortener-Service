@@ -1,11 +1,11 @@
 # URL Shortener (Go + MySQL + Redis)
 
-本项目整理自你提供的实现，包含：
-- `POST /newurl` 创建短链
-- `GET /{code}` 301 跳转
-- MySQL 持久化、Redis 缓存、内存回退（DB 未配置时）
+This project is based on your provided implementation and includes:
+- `POST /newurl` to create short URLs
+- `GET /{code}` to perform a 301 redirect
+- Persistent storage via MySQL, caching via Redis, and in-memory fallback (when DB is not configured)
 
-## 目录结构
+## Project Structure
 ```
 url-shortener-go/
 ├─ main.go
@@ -15,33 +15,33 @@ url-shortener-go/
 └─ docker-compose.yml
 ```
 
-## 快速开始（本地）
+## Quick Start (Local)
 
-1. 安装 Go 1.20+：<https://go.dev/dl/>
-2. 复制环境变量配置：
+1. Install Go 1.20+: <https://go.dev/dl/>
+2. Copy and configure environment variables:
    ```bash
    cp .env.example .env
-   # 按需编辑 .env
+   # Edit .env as needed
    ```
-3. 启动依赖（可选，若你本地已有 MySQL/Redis 可跳过）：
+3. Start dependencies (optional if you already have MySQL/Redis running locally):
    ```bash
    docker compose up -d
    ```
-4. 运行服务：
+4. Run the service:
    ```bash
    source .env
    go run ./main.go
-   # 默认监听 :8080
+   # By default, the service listens on :8080
    ```
 
-### API 示例
-创建短链：
+### API Example
+Create a short URL:
 ```bash
 curl -X POST -H "Content-Type: application/json" \
   -d '{"domain":"shortenurl.org","url":"https://www.google.com"}' \
   http://localhost:8080/newurl
 ```
-示例返回：
+Sample response:
 ```json
 {
   "url": "https://www.google.com",
@@ -49,22 +49,22 @@ curl -X POST -H "Content-Type: application/json" \
 }
 ```
 
-访问短链（返回 301）：
+Redirect using short URL:
 ```bash
 curl -I http://localhost:8080/Ab3XyZ9Kl
 ```
 
-## 环境变量
-- `MYSQL_DSN` 形如：`user:password@tcp(127.0.0.1:3306)/shortdb?parseTime=true&charset=utf8mb4`
-- `REDIS_ADDR` 形如：`127.0.0.1:6379`
-- `REDIS_PASS` Redis 密码（无则留空）
-- `REDIS_DB` Redis DB 库序号（默认 0）
-- `PORT` HTTP 端口，默认 `8080`
+## Environment Variables
+- `MYSQL_DSN` Example: `user:password@tcp(127.0.0.1:3306)/shortdb?parseTime=true&charset=utf8mb4`
+- `REDIS_ADDR` Example: `127.0.0.1:6379`
+- `REDIS_PASS` Redis password (leave blank if not set)
+- `REDIS_DB` Redis DB index (default: 0)
+- `PORT` HTTP port (default: `8080`)
 
-> 未配置 MySQL/Redis 时，会自动使用 **内存模式**（不持久化，仅便于本地测试）。
+> If MySQL or Redis is not configured, the service will fall back to **in-memory mode** (no persistence), useful for local testing.
 
-## 数据表
-服务启动时会自动创建：
+## Database Schema
+The table is created automatically on startup:
 ```sql
 CREATE TABLE IF NOT EXISTS shortened_urls (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -75,19 +75,13 @@ CREATE TABLE IF NOT EXISTS shortened_urls (
 ) ENGINE=InnoDB;
 ```
 
-## Docker 运行（可选）
+## Run with Docker (Optional)
 ```bash
 docker build -t url-shortener-go .
 docker run --env-file .env -p 8080:8080 url-shortener-go
 ```
 
-## 说明
-- 短码长度固定为 9，字符集 `[0-9A-Za-z]`。
-- 生成短码采用 `crypto/rand`，并做了取模偏差处理。
-- 读路径：Redis 命中 → MySQL 查询 → 回填缓存。
-- 写路径：MySQL 插入（唯一索引兜底冲突）→ 成功后回填 Redis。
-
----
-
-### 原始运行说明（你提供的文本，便于保留）
-该程序可在任意 Linux/本地运行，所需环境变量：`MYSQL_DSN` / `REDIS_ADDR` / `REDIS_PASS` / `REDIS_DB` / `PORT`。若未配置 MySQL/Redis，将回退内存存储用于快速测试。
+## Notes
+- Short codes are fixed at 9 characters, using `[0-9A-Za-z]`.
+- Codes are generated using `crypto/rand` with bias correction on modulo operations.
+- Read flow: Redis hit → fallback to MySQL → then b
